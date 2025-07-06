@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: devconnect-pstgres
+    container_name: devconnect-postgres
     ports:
       - "5432:5432"
     environment:
@@ -13,5 +13,14 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7
+    container_name: devconnect-redis
+    ports:
+      - "6739:6739"
+    volumes:
+      - redis-data:/data
+
 volumes:
   postgres-data:
+  redis-data:
