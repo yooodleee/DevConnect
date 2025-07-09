@@ -17,7 +17,7 @@ services:
     image: redis:7
     container_name: devconnect-redis
     ports:
-      - "6739:6739"
+      - "6379:6379"
     volumes:
       - redis-data:/data
 

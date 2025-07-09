@@ -12,6 +12,9 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
+        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
+        config.setHostName("host.docker.internal"); // Docker -> Host 접근 시
+        config.setPort(6379);
         return new LettuceConnectionFactory(); // 기본: localhost:6379
     }
 
