@@ -5,12 +5,15 @@ import com.devconnect.devconnect.dto.LoginResponse;
 import com.devconnect.devconnect.dto.SignupRequest;
 import com.devconnect.devconnect.dto.SignupResponse;
 import com.devconnect.devconnect.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 
 @RestController
@@ -42,5 +45,11 @@ public class AuthController {
 
         String userId = (String) authentication.getPrincipal();
         return ResponseEntity.ok("현재 로그인한 사용자 ID: " + userId);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
+        authService.logout(request);
+        return ResponseEntity.ok(Map.of("message", "로그아웃 성공"));
     }
 }

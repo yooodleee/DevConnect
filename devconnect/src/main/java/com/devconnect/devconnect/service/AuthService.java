@@ -8,8 +8,10 @@ import com.devconnect.devconnect.dto.LoginResponse;
 import com.devconnect.devconnect.security.JwtUtil;
 import com.devconnect.devconnect.repository.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 //import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -67,5 +69,14 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         return new SignupResponse("회원가입 성공", savedUser.getId());
+    }
+
+    public void logout(HttpServletRequest request) {
+        String token = jwtUtil.resolveToken(request); // Authorization 헤더에서 추출
+        if (token != null && jwtUtil.validateToken(token)) {
+            String userId = jwtUtil.getUserIdFromToken(token);
+            redisTemplate.delete("TOKEN:" + userId); // Redis에서 삭제
+            SecurityContextHolder.clearContext(); // 선택 가능
+        }
     }
 }
