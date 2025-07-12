@@ -2,6 +2,7 @@ package com.devconnect.devconnect.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,31 +15,44 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static Key key;
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24시간
+    private final Key key;
+
+    private static final long ACCESS_TOKEN_TTL = 1000L * 60 * 15; // 15분
+    private static final long REFRESH_TOKEN_TTL = 1000L * 60 * 60 * 24 * 7; // 7일
 
     public JwtUtil(@Value("${JWT_SECRET_KEY}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
+    // Access Token 생성
+    public String generateAccessToken(String userId) {
+        return generateToken(userId, ACCESS_TOKEN_TTL);
+    }
+
+    // Refresh Token 생성
+    public String generateRefreshToken(String userId) {
+        return generateToken(userId, REFRESH_TOKEN_TTL);
+    }
+
     // JWT 생성
-    public String generateToken(String userId) {
+    public String generateToken(String userId, long expiration) {
         return Jwts.builder()
                 .setSubject(userId)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     // JWT에서 userId 추출
     public String getUserIdFromToken(String token) {
-        return Jwts.parserBuilder()
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+
+        return claims.getSubject();
     }
 
     // JWT 유효성 검사
@@ -51,10 +65,10 @@ public class JwtUtil {
         }
     }
 
-    public String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+    public String extractToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
         }
         return null;
     }
