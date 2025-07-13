@@ -1,5 +1,6 @@
 package com.devconnect.devconnect.security;
 
+import com.devconnect.devconnect.entity.Role; // Role enum import
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -25,19 +26,20 @@ public class JwtUtil {
     }
 
     // Access Token 생성
-    public String generateAccessToken(String userId) {
-        return generateToken(userId, ACCESS_TOKEN_TTL);
+    public String generateAccessToken(String userId, Role role) {
+        return generateToken(userId, role, ACCESS_TOKEN_TTL);
     }
 
     // Refresh Token 생성
-    public String generateRefreshToken(String userId) {
-        return generateToken(userId, REFRESH_TOKEN_TTL);
+    public String generateRefreshToken(String userId, Role role) {
+        return generateToken(userId, role, REFRESH_TOKEN_TTL);
     }
 
     // JWT 생성
-    public String generateToken(String userId, long expiration) {
+    public String generateToken(String userId, Role role, long expiration) {
         return Jwts.builder()
                 .setSubject(userId)
+                .claim("role", role.name()) // 역할 포함
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -53,6 +55,17 @@ public class JwtUtil {
                 .getBody();
 
         return claims.getSubject();
+    }
+
+    // JWT에서 Role 추출
+    public String getRoleFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("role", String.class); // "USER", "ADMIN" 등의 문자열 반환
     }
 
     // JWT 유효성 검사

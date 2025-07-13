@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // 필터 등록
-                .httpBasic();  // 테스트용 기본 인증
+                .httpBasic();
 
         return http.build();
     }

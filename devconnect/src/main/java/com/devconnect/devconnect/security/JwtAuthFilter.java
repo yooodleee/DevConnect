@@ -13,9 +13,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 
 @Component
@@ -43,11 +45,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String redisToken = redisTemplate.opsForValue().get(TOKEN_PREFIX + userId);
             logger.info("[JwtAuthFilter] Redis Token: {}" + redisToken);
 
+            String roleName = jwtUtil.getRoleFromToken(token); // 역할 추출
+            logger.info("[JwtAuthFilter] Role Name from Token: {}" + roleName);
+
             if (token.equals(redisToken)) {
                 logger.info("[JwtAuthFilter] Token validated, setting SecurityContext");
 
+                // 권한 부여
+                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + roleName));
+
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList()); // 권한 X
+                        new UsernamePasswordAuthenticationToken(userId, null, authorities); // 권한 포함 
                 authentication.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
@@ -67,5 +75,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (!StringUtils.hasText(bearerToken)) return null;
         if (!bearerToken.startsWith("Bearer ")) return null;
         return bearerToken.substring(7);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        boolean skip = path.startsWith("/api/auth/login") ||
+                        path.startsWith("/api/auth/signup") ||
+                        path.startsWith("/api/auth/refresh");
+        logger.info("[JwtAuthFilter] shouldNotFilter for path: {}" + path);
+        return skip;
     }
 }

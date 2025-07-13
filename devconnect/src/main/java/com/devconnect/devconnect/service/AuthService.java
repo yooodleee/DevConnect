@@ -1,6 +1,6 @@
 package com.devconnect.devconnect.service;
 
-import com.devconnect.devconnect.entity.User;
+import com.devconnect.devconnect.entity.*;
 import com.devconnect.devconnect.dto.*;
 import com.devconnect.devconnect.security.JwtUtil;
 import com.devconnect.devconnect.repository.UserRepository;
@@ -38,6 +38,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
+                .role(Role.USER) // 기본 권한 설정
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -61,8 +62,8 @@ public class AuthService {
 
         // 3. JWT 생성
         String userId = String.valueOf(user.getId());
-        String accessToken = jwtUtil.generateAccessToken(userId);
-        String refreshToken = jwtUtil.generateRefreshToken(userId);
+        String accessToken = jwtUtil.generateAccessToken(user.getId().toString(), user.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId().toString(), user.getRole());
 
         // 4. Redis에 Access Token과 Refresh Token 저장 (토큰 만료 시간과 동일하게 설정)
         redisTemplate.opsForValue().set(
@@ -101,8 +102,8 @@ public class AuthService {
         }
 
         // 3. 새 토큰 생성
-        String newAccessToken = jwtUtil.generateAccessToken(userId);
-        String newRefreshToken = jwtUtil.generateRefreshToken(userId);
+        String newAccessToken = jwtUtil.generateAccessToken(userId, Role.USER);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId, Role.USER);
 
         // 4. 기존 토큰 삭제
         redisTemplate.delete(ACCESS_PREFIX + userId);
